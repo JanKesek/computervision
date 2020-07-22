@@ -153,8 +153,8 @@ if __name__ == "__main__":
         #for l in os.listdir("exchange"):
         #        os.remove("exchange/{}".format(l))       
         while True:
-                #img=ImageGrab.grab()
-                img=Image.open("infoscreen.png")
+                img=ImageGrab.grab()
+                #img=Image.open("infoscreen.png")
                 width,height=img.size
                 img=img.crop((0,40,width/2, height/10))
                 info=pytesseract.image_to_string(img)
