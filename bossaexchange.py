@@ -46,7 +46,7 @@ def alert_new_message(file_path,info,file_index):
                 prev_message=read_file(file_path,prev_index)
                 if info!=prev_message:
                         notification.notify(title="New BOSSA message!",message=info)
-                        send_sms(info)
+                        #send_sms(info)
                         write_file(file_path,info,file_index,after_parse=1)
         else: write_file(file_path,info,file_index,after_parse=1)
 def find_prev_newest_msg(file_index):
@@ -67,8 +67,8 @@ if not os.path.isdir("exchange"):
 for l in os.listdir("exchange"):
         os.remove("exchange/{}".format(l))       
 while True:
-        img=ImageGrab.grab()
-        #img=Image.open("infoscreen.png")
+        #img=ImageGrab.grab()
+        img=Image.open("infoscreen.png")
         width,height=img.size
         img=img.crop((0,40,width/2, height/10))
         #img=invertImage(img)

@@ -9,7 +9,8 @@ import sqlite3
 import datetime
 import re
 import tkinter as tk
-
+import requests
+import datetime
 class SQLiteConn:
         @staticmethod
         def connect():
@@ -97,10 +98,15 @@ def alert_new_message(file_path,info,file_index):
         print("PREV HOUR {} CURRENT HOUR {}".format(prev_hour,hour))
         if hour!=prev_hour:
                 if is_bossa_message(info):
-                        notification.notify(title="New BOSSA message!",message=message)
-                        SQLiteConn.insert_message(hour,message)      
-                        send_sms(info)
+                        #notification.notify(title="New BOSSA message!",message=message)
+                        SQLiteConn.insert_message(hour,message)
+                        send_push(title=hour,message=message)      
+                        #send_sms(info)
                         #write_file(file_path,info,file_index,after_parse=1)
+def send_push(title,message):
+        payload={'title':title,'body': message,"date": datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}
+        requests.post("https://34.68.138.17/send",json=payload,verify=False)
+        #requests.post("https://localhost:3000/send",json=payload, verify=False)
 def is_bossa_message(message):
         hour=message.split(" ")[0]
         print("CHECKING IF HOUR MATCHES REGEX:{}".format(hour))
@@ -141,7 +147,7 @@ def input_twilio_key():
                 button.grid(row=3, column=0, sticky=tk.W, pady=4)
                 tk.mainloop()
 if __name__ == "__main__":
-        input_twilio_key()
+        #input_twilio_key()
         log_file=open("logs.txt","w")
         sys.stdout=log_file
         SQLiteConn.connect()
@@ -153,7 +159,7 @@ if __name__ == "__main__":
         #for l in os.listdir("exchange"):
         #        os.remove("exchange/{}".format(l))       
         while True:
-                img=ImageGrab.grab()
+                img=ImageGrab.grab(all_screens=True)
                 #img=Image.open("infoscreen.png")
                 width,height=img.size
                 img=img.crop((0,40,width/2, height/10))
