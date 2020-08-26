@@ -9,7 +9,8 @@ import sqlite3
 import datetime
 import re
 import tkinter as tk
-
+import requests
+import datetime
 class SQLiteConn:
         @staticmethod
         def connect():
@@ -69,6 +70,9 @@ def invertImage(image):
                 final_image = ImageOps.invert(image)
         return final_image
 def write_file(file_path,info,file_index,after_parse=0):
+        if type(info)!=str:
+                info.save(file_path.format(file_index))
+                return
         if after_parse==1: file_path=file_path.format(file_index)
         else: file_path=file_path.format(file_index)+'bytes'
         with open(file_path,'w') as f:
@@ -97,10 +101,15 @@ def alert_new_message(file_path,info,file_index):
         print("PREV HOUR {} CURRENT HOUR {}".format(prev_hour,hour))
         if hour!=prev_hour:
                 if is_bossa_message(info):
-                        notification.notify(title="New BOSSA message!",message=message)
-                        SQLiteConn.insert_message(hour,message)      
-                        send_sms(info)
+                        #notification.notify(title="New BOSSA message!",message=message)
+                        SQLiteConn.insert_message(hour,message)
+                        send_push(title=hour,message=message)      
+                        #send_sms(info)
                         #write_file(file_path,info,file_index,after_parse=1)
+def send_push(title,message):
+        payload={'title':title,'body': message,"date": datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")}
+        requests.post("https://34.68.138.17/send",json=payload,verify=False)
+        #requests.post("https://localhost:3000/send",json=payload, verify=False)
 def is_bossa_message(message):
         hour=message.split(" ")[0]
         print("CHECKING IF HOUR MATCHES REGEX:{}".format(hour))
@@ -119,6 +128,12 @@ def set_twilio_key(ssid,auth,phonenumber,master=None):
         with open("api.txt",'w') as f:
                 f.write(' '.join([ssid,auth,phonenumber]))
         if master!=None: master.destroy()
+def take_screenshot():
+        imgFull=ImageGrab.grab(all_screens=True)
+        #img=Image.open("infoscreen.png")
+        width,height=imgFull.size
+        #img=imgFull.crop((0,40,width/2, height/10))
+
 def input_twilio_key():
         if os.path.exists("api.txt"):
                 with open("api.txt",'r') as f:
@@ -141,7 +156,8 @@ def input_twilio_key():
                 button.grid(row=3, column=0, sticky=tk.W, pady=4)
                 tk.mainloop()
 if __name__ == "__main__":
-        input_twilio_key()
+        #input_twilio_key()
+        print("Prosze ustawic ekran na program BOSSA Nol")
         log_file=open("logs.txt","w")
         sys.stdout=log_file
         SQLiteConn.connect()
@@ -151,12 +167,13 @@ if __name__ == "__main__":
         if not os.path.isdir("exchange"):
                 os.makedirs("exchange")
         #for l in os.listdir("exchange"):
-        #        os.remove("exchange/{}".format(l))       
+        #        os.remove("exchange/{}".format(l))
+        sleep(10)       
         while True:
-                #img=ImageGrab.grab()
-                img=Image.open("infoscreen.png")
-                width,height=img.size
-                img=img.crop((0,40,width/2, height/10))
+                if i==0:
+                        imgFull,img=take_screenshots()
+                        write_file("exchange/fullImage{}.png",imgFull,i)
+                        write_file("exchange/croppedImage{}.png",img,i)
                 info=pytesseract.image_to_string(img)
                 file_path='exchange/output{}.txt'
                 write_file(file_path,info,i)
