@@ -9,8 +9,8 @@ import re
 import tkinter as tk
 #import requests
 import datetime
-from mousepos import CropApp
-from notifications import send_sms,set_twilio_key,input_twilio_key,send_push, send_os_notification
+from plyer import notification
+from playsound import playsound
 
 class SQLiteConn:
         @staticmethod
@@ -97,7 +97,9 @@ def alert_new_message(file_path,info,file_index):
         if hour!=prev_hour:
                 if is_bossa_message(info):
                         #notification.notify(title="New BOSSA message!",message=message)
-                        send_os_notification(hour,message)
+                        #send_os_notification(hour,message)
+                        notification.notify(title=hour,message=message)
+                        playsound("beeps/beep-05.mp3")
                         SQLiteConn.insert_message(hour,message)
                         print("New message found sending message")
                         #send_push(title=hour,message=message)      
@@ -133,19 +135,19 @@ def crop_screenshot(filepath,xy,imgFull):
 
 if __name__ == "__main__":
         #input_twilio_key()
-        #print("Prosze ustawic ekran na program BOSSA Nol")
+        print("Prosze ustawic ekran na program BOSSA Nol")
         log_file=open("logs.txt","w")
         sys.stdout=log_file
         SQLiteConn.connect()
-        SQLiteConn.delete_all()
+        #SQLiteConn.delete_all()
         pytesseract.pytesseract.tesseract_cmd=r'C:\Users\chewb\AppData\Local\Tesseract-OCR\tesseract.exe'
         i=0
         if not os.path.isdir("exchange"):
                 os.makedirs("exchange")
         #for l in os.listdir("exchange"):
         #        os.remove("exchange/{}".format(l))
-        #sleep(3)
-        xycrop={'x1':0,'y1':0,'x2':100,'y2':100}
+        sleep(6)
+        xycrop={'x1': 128, 'y1': 160, 'x2': 590, 'y2': 187}
         while True:
                 #FUNCTION RETURNS: FULL IMAGE, CROPPED IMAGE, IMAGE COORDINATES
                 imgFull=ImageGrab.grab(all_screens=True)
