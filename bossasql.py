@@ -9,6 +9,7 @@ import re
 import tkinter as tk
 from pyrobot import Robot
 #import requests
+import shutil
 import datetime
 from mousepos import CropApp
 from notifications import send_sms, set_twilio_key, input_twilio_key, send_push, send_os_notification
@@ -152,10 +153,11 @@ def crop_screenshot(filepath, xy, imgFull):
         print("AFTER CROP")
         xy = crop.xy
         print(xy)
-        log_file = open("logs.txt", "w")
-        sys.stdout = log_file
+
 
     print("OUR COORDINATES AFTER CROP: ", xy)
+    log_file = open("logs.txt", "w")
+    sys.stdout = log_file
     # img=imgFull.crop((38,3,1012,505))\
     imgFull = Image.open(filepath)
     img = imgFull.crop((xy['x1'], xy['y1'], xy['x2'], xy['y2']))
@@ -208,7 +210,9 @@ if __name__ == "__main__":
     print("Prosze ustawic ekran na program BOSSA Nol")
     SQLiteConn.connect()
     SQLiteConn.delete_all()
-    # pytesseract.pytesseract.tesseract_cmd=r'C:\Users\chewb\AppData\Local\Tesseract-OCR\tesseract.exe'
+    if shutil.which("tesseract") is None:
+        print("Trzeba ustawic sciezke do tesseract.exe")
+        pytesseract.pytesseract.tesseract_cmd=r'C:\Users\Pawel\AppData\Local\Tesseract-OCR\tesseract.exe'
     i = 0
     if not os.path.isdir("exchange"):
         os.makedirs("exchange")
