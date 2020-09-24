@@ -7,12 +7,12 @@ import sqlite3
 import datetime
 import re
 import tkinter as tk
-from pyrobot import Robot
+from .pyrobot import Robot
 #import requests
 import shutil
 import datetime
-from mousepos import CropApp
-from notifications import send_sms, set_twilio_key, input_twilio_key, send_push, send_os_notification
+from .mousepos import CropApp
+from .notifications import send_sms, set_twilio_key, input_twilio_key, send_push, send_os_notification
 
 
 class SQLiteConn:
@@ -69,18 +69,6 @@ class SQLiteConn:
             print("select ERROR: ", e)
 
 
-def invertImage(image):
-    if image.mode == 'RGBA':
-        r, g, b, a = image.split()
-        rgb_image = Image.merge('RGB', (r, g, b))
-        inverted_image = ImageOps.invert(rgb_image)
-        r2, g2, b2 = inverted_image.split()
-        final_image = Image.merge('RGBA', (r2, g2, b2, a))
-    else:
-        final_image = ImageOps.invert(image)
-    return final_image
-
-
 def write_file(file_path, info, file_index, after_parse=0):
     if type(info) != str:
         info.save(file_path.format(file_index))
@@ -116,6 +104,7 @@ def alert_new_message(file_path, info, file_index):
     message = " ".join(info.split(" ")[1:])
     print("PREV HOUR {} CURRENT HOUR {}".format(prev_hour, hour))
     if hour != prev_hour:
+        print(message)
         if is_bossa_message(info):
             #notification.notify(title="New BOSSA message!",message=message)
             send_os_notification(hour, message)
@@ -156,8 +145,6 @@ def crop_screenshot(filepath, xy, imgFull):
 
 
     print("OUR COORDINATES AFTER CROP: ", xy)
-    log_file = open("logs.txt", "w")
-    sys.stdout = log_file
     # img=imgFull.crop((38,3,1012,505))\
     imgFull = Image.open(filepath)
     img = imgFull.crop((xy['x1'], xy['y1'], xy['x2'], xy['y2']))
@@ -197,8 +184,10 @@ def take_input_list():
     except Exception as e:
         print("Zle wpisales wspolrzedne ", e)
         return {}
-
-def take_input(robot):
+def take_screenshot(monitor):
+    return robot.take_screenshot(monitor)
+def take_input():
+    robot=Robot()
     monitors = robot.get_display_monitors()
     monitor_index = take_input_number(monitors)
     #fullImg = robot.take_screenshot(monitors[monitor_index-1])
@@ -218,14 +207,16 @@ if __name__ == "__main__":
         os.makedirs("exchange")
     # for l in os.listdir("exchange"):
     #    os.remove("exchange/{}".format(l))
-    robot=Robot()
-    xycrop, monitor = take_input(robot)
+    xycrop, monitor = take_input()
     if len(xycrop)==0: print("PRosze KLIKNAC 2 KROTNIE (WYBRAC WSPOLRZEDNE CROPA)")
+    log_file = open("logs.txt", "w")
+    sys.stdout = log_file
+
     sleep(1)
     while True:
         # FUNCTION RETURNS: FULL IMAGE, CROPPED IMAGE, IMAGE COORDINATES
         # imgFull=ImageGrab.grab(all_screens=True)
-        imgFull=robot.take_screenshot(monitor)
+        imgFull=take_screenshot(monitor)
         full_img_path = "exchange/fullImage{}.png"
         cropped_img_path = "exchange/croppedImage{}.png"
         write_file(full_img_path, imgFull, i)
