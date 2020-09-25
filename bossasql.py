@@ -1,4 +1,5 @@
 import pytesseract
+from unidecode import unidecode
 from time import sleep, time
 from PIL import ImageGrab, Image, ImageOps
 import sys
@@ -96,13 +97,13 @@ def read_file(file_path, file_index, after_parse=1):
     return s
 
 
-def alert_new_message(file_path, info, file_index):
+def alert_new_message(file_path, info):
     prev_hour = find_prev_newest_msg()
     if prev_hour != None:
         prev_hour = prev_hour[0]
     hour = info.split(" ")[0]
     message = " ".join(info.split(" ")[1:])
-    print("PREV HOUR {} CURRENT HOUR {}".format(prev_hour, hour))
+    #print("PREV HOUR {} CURRENT HOUR {}".format(prev_hour, hour))
     if hour != prev_hour:
         print(message)
         if is_bossa_message(info):
@@ -110,14 +111,15 @@ def alert_new_message(file_path, info, file_index):
             send_os_notification(hour, message)
             SQLiteConn.insert_message(hour, message)
             print("New message found sending message")
+            return True
             # send_push(title=hour,message=message)
             # send_sms(info)
             # write_file(file_path,info,file_index,after_parse=1)
-
+    return False
 
 def is_bossa_message(message):
     hour = message.split(" ")[0]
-    print("CHECKING IF HOUR MATCHES REGEX:{}".format(hour))
+    #print("CHECKING IF HOUR MATCHES REGEX:{}".format(hour))
     return bool(re.match(r'[0-9]{2}:[0-9]{2}', hour))
 
 
@@ -125,24 +127,25 @@ def find_prev_newest_msg():
     return SQLiteConn.get_last()
 
 
-def parse_screen_data(datain, file_index):
-    datain = datain.split("\n")
+def parse_screen_data(datain):
+    datain2 = datain.split("\n")
     print(datain)
     # datain="\n\n".join(datain[3:7])
-    datain = "".join(datain[0])
-    return datain
+    datain2 = "".join(datain2[0])
+    return datain, datain2
 
 # FUNCTION RETURNS: FULL IMAGE, CROPPED IMAGE, IMAGE COORDINATES
 
-
+def read_text_from_image(img):
+    return unidecode(pytesseract.image_to_string(img))
 def crop_screenshot(xy, imgFull):
     if len(xy) == 0:
-        print("BEFORE CROP", imgFull)
+        #print("BEFORE CROP", imgFull)
         crop = CropApp(imgFull)
-        print("AFTER CROP")
+        #print("AFTER CROP")
         xy = crop.xy
-        print(xy)
-    print("OUR COORDINATES AFTER CROP: ", xy)
+        #print(xy)
+    #print("OUR COORDINATES AFTER CROP: ", xy)
     # img=imgFull.crop((38,3,1012,505))\
     #imgFull = Image.open(filepath)
     img = imgFull.crop((xy['x1'], xy['y1'], xy['x2'], xy['y2']))
@@ -214,6 +217,7 @@ if __name__ == "__main__":
     while True:
         # FUNCTION RETURNS: FULL IMAGE, CROPPED IMAGE, IMAGE COORDINATES
         # imgFull=ImageGrab.grab(all_screens=True)
+        start_time = time()
         imgFull=take_screenshot(robot,monitor)
         full_img_path = "exchange/fullImage{}.png"
         cropped_img_path = "exchange/croppedImage{}.png"
@@ -225,13 +229,15 @@ if __name__ == "__main__":
         if i != 0:
             os.remove(full_img_path.format(i))
             os.remove(cropped_img_path.format(i))
-        info = pytesseract.image_to_string(img)
+        info = read_text_from_image(img)
         file_path = 'exchange/output{}.txt'
-        write_file(file_path, info, i)
-        s = read_file(file_path, i, after_parse=0)
-        infoParsed = parse_screen_data(s, i)
-        alert_new_message(file_path, infoParsed, i)
-        os.remove(file_path.format(i)+'bytes')
+        #write_file(file_path, info, i)
+        #s = read_file(file_path, i, after_parse=0)
+        #info2,info=parse_screen_data(info)
+        #print("PARSED TEXT: ",info)
+        msg_found=alert_new_message(file_path, info)
+        #os.remove(file_path.format(i)+'bytes')
         i += 1
-        sleep(2)
+        if msg_found:
+            print("MESSAGE FOUND IN --- %s seconds ---" % (time() - start_time))
     log_file.close()
