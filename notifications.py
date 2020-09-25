@@ -2,7 +2,9 @@ import datetime
 import requests
 from plyer import notification
 from playsound import playsound
+import os
 #from twilio.rest import Client
+
 
 def send_sms(info):
         global twilio_keys
@@ -45,5 +47,7 @@ def send_push(title,message):
         #requests.post("https://localhost:3000/send",json=payload, verify=False)
 
 def send_os_notification(title,message):
-    notification.notify(title=title,message=message)
-    playsound("beeps/beep-05.mp3")
+        notification.notify(title=title,message=message)
+        beepfilepath=os.path.join(os.path.dirname(os.path.realpath(__file__)),"beeps","beep-05.mp3")
+        print(beepfilepath)
+        playsound(beepfilepath)

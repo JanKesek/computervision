@@ -97,7 +97,7 @@ def read_file(file_path, file_index, after_parse=1):
 
 
 def alert_new_message(file_path, info, file_index):
-    prev_hour = find_prev_newest_msg(file_index)
+    prev_hour = find_prev_newest_msg()
     if prev_hour != None:
         prev_hour = prev_hour[0]
     hour = info.split(" ")[0]
@@ -121,7 +121,7 @@ def is_bossa_message(message):
     return bool(re.match(r'[0-9]{2}:[0-9]{2}', hour))
 
 
-def find_prev_newest_msg(file_index):
+def find_prev_newest_msg():
     return SQLiteConn.get_last()
 
 
@@ -135,18 +135,16 @@ def parse_screen_data(datain, file_index):
 # FUNCTION RETURNS: FULL IMAGE, CROPPED IMAGE, IMAGE COORDINATES
 
 
-def crop_screenshot(filepath, xy, imgFull):
+def crop_screenshot(xy, imgFull):
     if len(xy) == 0:
         print("BEFORE CROP", imgFull)
         crop = CropApp(imgFull)
         print("AFTER CROP")
         xy = crop.xy
         print(xy)
-
-
     print("OUR COORDINATES AFTER CROP: ", xy)
     # img=imgFull.crop((38,3,1012,505))\
-    imgFull = Image.open(filepath)
+    #imgFull = Image.open(filepath)
     img = imgFull.crop((xy['x1'], xy['y1'], xy['x2'], xy['y2']))
     return img, xy
     # img=Image.open("infoscreen.png")
@@ -184,10 +182,9 @@ def take_input_list():
     except Exception as e:
         print("Zle wpisales wspolrzedne ", e)
         return {}
-def take_screenshot(monitor):
+def take_screenshot(robot,monitor):
     return robot.take_screenshot(monitor)
-def take_input():
-    robot=Robot()
+def take_input(robot):
     monitors = robot.get_display_monitors()
     monitor_index = take_input_number(monitors)
     #fullImg = robot.take_screenshot(monitors[monitor_index-1])
@@ -207,7 +204,8 @@ if __name__ == "__main__":
         os.makedirs("exchange")
     # for l in os.listdir("exchange"):
     #    os.remove("exchange/{}".format(l))
-    xycrop, monitor = take_input()
+    robot=Robot()
+    xycrop, monitor = take_input(robot)
     if len(xycrop)==0: print("PRosze KLIKNAC 2 KROTNIE (WYBRAC WSPOLRZEDNE CROPA)")
     log_file = open("logs.txt", "w")
     sys.stdout = log_file
@@ -216,11 +214,12 @@ if __name__ == "__main__":
     while True:
         # FUNCTION RETURNS: FULL IMAGE, CROPPED IMAGE, IMAGE COORDINATES
         # imgFull=ImageGrab.grab(all_screens=True)
-        imgFull=take_screenshot(monitor)
+        imgFull=take_screenshot(robot,monitor)
         full_img_path = "exchange/fullImage{}.png"
         cropped_img_path = "exchange/croppedImage{}.png"
         write_file(full_img_path, imgFull, i)
-        img, xycrop = crop_screenshot(full_img_path.format(i), xycrop, imgFull)
+        #img, xycrop = crop_screenshot(full_img_path.format(i), xycrop, imgFull)
+        img, xycrop = crop_screenshot(xycrop, imgFull)
         print(xycrop, img)
         write_file(cropped_img_path, img, i)
         if i != 0:
