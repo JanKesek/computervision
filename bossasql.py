@@ -53,7 +53,7 @@ class SQLiteConn:
     @staticmethod
     def get_last():
         SQLiteConn.cursor.execute("""
-                  select hour from messages where id=(select max(id) from messages);
+                  select * from messages where id=(select max(id) from messages);
                 """)
         rows = SQLiteConn.cursor.fetchone()
         return rows
@@ -97,18 +97,20 @@ def read_file(file_path, file_index, after_parse=1):
     return s
 
 
-def alert_new_message(file_path, info):
+def alert_new_message(info):
     prev_hour = find_prev_newest_msg()
     if prev_hour != None:
-        prev_hour = prev_hour[0]
+        #WYJASNIENIE 3 TO TEKST WIADOMOSCI, 2 TO GODZINA
+        prev_hour = prev_hour[3]
+        print("PREV MESSAGE",prev_hour)
     hour = info.split(" ")[0]
     message = " ".join(info.split(" ")[1:])
     #print("PREV HOUR {} CURRENT HOUR {}".format(prev_hour, hour))
-    if hour != prev_hour:
+    if message != prev_hour:
         print(message)
-        if is_bossa_message(info):
+        if is_bossa_message(hour):
             #notification.notify(title="New BOSSA message!",message=message)
-            send_os_notification(hour, message)
+            #send_os_notification(hour, message)
             SQLiteConn.insert_message(hour, message)
             print("New message found sending message")
             return True
@@ -117,8 +119,8 @@ def alert_new_message(file_path, info):
             # write_file(file_path,info,file_index,after_parse=1)
     return False
 
-def is_bossa_message(message):
-    hour = message.split(" ")[0]
+def is_bossa_message(hour):
+    #hour = message.split(" ")[0]
     #print("CHECKING IF HOUR MATCHES REGEX:{}".format(hour))
     return bool(re.match(r'[0-9]{2}:[0-9]{2}', hour))
 
@@ -193,12 +195,13 @@ def take_input(robot):
     #fullImg = robot.take_screenshot(monitors[monitor_index-1])
     imgcrop = take_input_list()
     return imgcrop,monitors[monitor_index-1]
-
+def connect_db():
+    SQLiteConn.connect()
+    SQLiteConn.delete_all()
 if __name__ == "__main__":
     # input_twilio_key()
     print("Prosze ustawic ekran na program BOSSA Nol")
-    SQLiteConn.connect()
-    SQLiteConn.delete_all()
+    connect_db()
     if shutil.which("tesseract") is None:
         print("Trzeba ustawic sciezke do tesseract.exe")
         pytesseract.pytesseract.tesseract_cmd=r'C:\Users\Pawel\AppData\Local\Tesseract-OCR\tesseract.exe'
@@ -221,21 +224,22 @@ if __name__ == "__main__":
         imgFull=take_screenshot(robot,monitor)
         full_img_path = "exchange/fullImage{}.png"
         cropped_img_path = "exchange/croppedImage{}.png"
-        write_file(full_img_path, imgFull, i)
         #img, xycrop = crop_screenshot(full_img_path.format(i), xycrop, imgFull)
         img, xycrop = crop_screenshot(xycrop, imgFull)
         print(xycrop, img)
-        write_file(cropped_img_path, img, i)
-        if i != 0:
-            os.remove(full_img_path.format(i))
-            os.remove(cropped_img_path.format(i))
+        if i==0:
+            write_file(full_img_path, imgFull, i)
+            write_file(cropped_img_path, img, i)
+        #if i != 0:
+        #    os.remove(full_img_path.format(i))
+        #    os.remove(cropped_img_path.format(i))
         info = read_text_from_image(img)
-        file_path = 'exchange/output{}.txt'
+        #file_path = 'exchange/output{}.txt'
         #write_file(file_path, info, i)
         #s = read_file(file_path, i, after_parse=0)
         #info2,info=parse_screen_data(info)
         #print("PARSED TEXT: ",info)
-        msg_found=alert_new_message(file_path, info)
+        msg_found=alert_new_message(info)
         #os.remove(file_path.format(i)+'bytes')
         i += 1
         if msg_found:
