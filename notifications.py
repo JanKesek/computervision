@@ -47,7 +47,13 @@ def send_push(title,message):
         #requests.post("https://localhost:3000/send",json=payload, verify=False)
 
 def send_os_notification(title,message):
-        notification.notify(title=title,message=message)
-        beepfilepath=os.path.join(os.path.dirname(os.path.realpath(__file__)),"beeps","beep-05.mp3")
+        print("THIS MESSAGE IS BAD: ",message[:-2])
+        notification.notify(title=title,message=message[:-2])
+        #beepfilepath=os.path.join(os.path.dirname(os.path.realpath(__file__)),"beeps","beep-05.mp3")
+        if not os.path.isdir(os.path.join(os.path.dirname(__file__),'./beeps')):
+                beepfilepath=os.path.join("beeps","beep-05.mp3")
+        else:
+                beepfilepath=os.path.join(os.path.dirname(__file__),"beeps","beep-05.mp3")        
+        #beepfilepath=os.path.join("beeps","beep-05.mp3")
         print(beepfilepath)
         playsound(beepfilepath)

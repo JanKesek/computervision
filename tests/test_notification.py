@@ -4,8 +4,9 @@ from ..bossasql import read_text_from_image, alert_new_message, connect_db
 from .. import bossasql
 import PIL
 import os
-#def test_os_notification():
-#    send_os_notification("title","message")
+
+def test_os_notification():
+    send_os_notification("title","message")
 
 def test_alert_once_on_two_same():
     connect_db()

@@ -8,24 +8,30 @@ import sqlite3
 import datetime
 import re
 import tkinter as tk
-from .pyrobot import Robot
+from computervision.pyrobot import Robot
 #import requests
 import shutil
 import datetime
-from .mousepos import CropApp
-from .notifications import send_sms, set_twilio_key, input_twilio_key, send_push, send_os_notification
+from computervision.mousepos import CropApp
+from computervision.notifications import send_sms, set_twilio_key, input_twilio_key, send_push, send_os_notification
 
 
 class SQLiteConn:
     @staticmethod
     def connect():
+        if not os.path.isdir('./exchange'):
+            os.makedirs("exchange") 
         try:
-            SQLiteConn.conn = sqlite3.connect("exchange/messages.db")
+            dbfile=os.path.join(os.path.dirname(__file__),"exchange","messages.db")
+            SQLiteConn.conn = sqlite3.connect(
+               dbfile
+            )
             SQLiteConn.cursor = SQLiteConn.conn.cursor()
             SQLiteConn.cursor.execute("""
                          CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT,date TEXT,
                                                        hour TEXT, message TEXT)""")
             SQLiteConn.conn.commit()
+            print("Connected to Sqlite DB at: ", dbfile)
         except Exception as e:
             print("Connection ERROR: ", e)
 
@@ -110,7 +116,8 @@ def alert_new_message(info):
         print(message)
         if is_bossa_message(hour):
             #notification.notify(title="New BOSSA message!",message=message)
-            #send_os_notification(hour, message)
+            message=unidecode(message)
+            send_os_notification(hour, message)
             SQLiteConn.insert_message(hour, message)
             print("New message found sending message")
             return True
@@ -197,7 +204,7 @@ def take_input(robot):
     return imgcrop,monitors[monitor_index-1]
 def connect_db():
     SQLiteConn.connect()
-    SQLiteConn.delete_all()
+    #SQLiteConn.delete_all()
 if __name__ == "__main__":
     # input_twilio_key()
     print("Prosze ustawic ekran na program BOSSA Nol")
@@ -226,8 +233,8 @@ if __name__ == "__main__":
         cropped_img_path = "exchange/croppedImage{}.png"
         #img, xycrop = crop_screenshot(full_img_path.format(i), xycrop, imgFull)
         img, xycrop = crop_screenshot(xycrop, imgFull)
-        print(xycrop, img)
-        if i==0:
+        if i==0: 
+            print(xycrop, img)
             write_file(full_img_path, imgFull, i)
             write_file(cropped_img_path, img, i)
         #if i != 0:
