@@ -10,6 +10,7 @@ import re
 import tkinter as tk
 from computervision.pyrobot import Robot
 #import requests
+import json
 import shutil
 import datetime
 from computervision.mousepos import CropApp
@@ -108,12 +109,12 @@ def alert_new_message(info):
     if prev_hour != None:
         #WYJASNIENIE 3 TO TEKST WIADOMOSCI, 2 TO GODZINA
         prev_hour = prev_hour[3]
-        print("PREV MESSAGE",prev_hour)
+        #print("PREV MESSAGE",prev_hour)
     hour = info.split(" ")[0]
     message = " ".join(info.split(" ")[1:])
     #print("PREV HOUR {} CURRENT HOUR {}".format(prev_hour, hour))
     if message != prev_hour:
-        print(message)
+        #print(message)
         if is_bossa_message(hour):
             #notification.notify(title="New BOSSA message!",message=message)
             message=unidecode(message)
@@ -138,7 +139,7 @@ def find_prev_newest_msg():
 
 def parse_screen_data(datain):
     datain2 = datain.split("\n")
-    print(datain)
+    #print(datain)
     # datain="\n\n".join(datain[3:7])
     datain2 = "".join(datain2[0])
     return datain, datain2
@@ -147,12 +148,13 @@ def parse_screen_data(datain):
 
 def read_text_from_image(img):
     return unidecode(pytesseract.image_to_string(img))
-def crop_screenshot(xy, imgFull):
+def crop_screenshot(xy, imgFull,monitor_index):
     if len(xy) == 0:
         #print("BEFORE CROP", imgFull)
         crop = CropApp(imgFull)
         #print("AFTER CROP")
         xy = crop.xy
+        save_params(monitor_index,xy)
         #print(xy)
     #print("OUR COORDINATES AFTER CROP: ", xy)
     # img=imgFull.crop((38,3,1012,505))\
@@ -190,6 +192,7 @@ def take_input_list():
         cropList=list(map(int,crops))
         for i,key in enumerate(['x1','y1','x2','y2']):
             imgCrop[key]=cropList[i]
+        print(imgCrop)
         return imgCrop
     except Exception as e:
         print("Zle wpisales wspolrzedne ", e)
@@ -197,11 +200,28 @@ def take_input_list():
 def take_screenshot(robot,monitor):
     return robot.take_screenshot(monitor)
 def take_input(robot):
+    
     monitors = robot.get_display_monitors()
-    monitor_index = take_input_number(monitors)
-    #fullImg = robot.take_screenshot(monitors[monitor_index-1])
-    imgcrop = take_input_list()
-    return imgcrop,monitors[monitor_index-1]
+    if 'bossa_params.json' not in os.listdir():
+        monitor_index = take_input_number(monitors)
+        #fullImg = robot.take_screenshot(monitors[monitor_index-1])
+        imgcrop = take_input_list()
+        return imgcrop,monitors[monitor_index-1]
+    else:
+        monitor, imgcrop= read_params()
+        return imgcrop, monitor
+def save_params(monitor_index,imgcrop):
+    print(imgcrop)
+    with open("bossa_params.json",'w') as f:
+        jsonobj={k:imgcrop[k] for k in imgcrop}
+        jsonobj['monitorindex']=monitor_index
+        json.dump(jsonobj,f)
+def read_params():
+    obj={}
+    with open("bossa_params.json",'r') as f:
+        obj=json.load(f)
+    imgcrop={x:obj[x] for x in obj if x!='monitorindex'}
+    return obj['monitorindex'],imgcrop
 def connect_db():
     SQLiteConn.connect()
     #SQLiteConn.delete_all()
@@ -219,6 +239,7 @@ if __name__ == "__main__":
     #    os.remove("exchange/{}".format(l))
     robot=Robot()
     xycrop, monitor = take_input(robot)
+    
     if len(xycrop)==0: print("PRosze KLIKNAC 2 KROTNIE (WYBRAC WSPOLRZEDNE CROPA)")
     log_file = open("logs.txt", "w")
     sys.stdout = log_file
@@ -228,13 +249,17 @@ if __name__ == "__main__":
         # FUNCTION RETURNS: FULL IMAGE, CROPPED IMAGE, IMAGE COORDINATES
         # imgFull=ImageGrab.grab(all_screens=True)
         start_time = time()
+        #try:
         imgFull=take_screenshot(robot,monitor)
+        #except Exception as e:
+                #print(e)
         full_img_path = "exchange/fullImage{}.png"
         cropped_img_path = "exchange/croppedImage{}.png"
         #img, xycrop = crop_screenshot(full_img_path.format(i), xycrop, imgFull)
-        img, xycrop = crop_screenshot(xycrop, imgFull)
+        img, xycrop = crop_screenshot(xycrop, imgFull, monitor)
+        print(xycrop)
         if i==0: 
-            print(xycrop, img)
+            #print(xycrop, img)
             write_file(full_img_path, imgFull, i)
             write_file(cropped_img_path, img, i)
         #if i != 0:
