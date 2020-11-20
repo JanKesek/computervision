@@ -352,9 +352,9 @@ class Robot(object):
   A pure python windows automation library loosely modeled after Java's Robot Class.
   '''
 
-  def __init__(self, wname=None):
+  def __init__(self,wname=None):
     wname = wname if wname is not None else user32.GetDesktopWindow()
-
+    self.release=1
     try:
       wname.lower()
       hwnd = self.get_window_hwnd(wname)
@@ -565,12 +565,27 @@ class Robot(object):
 
     hDesktopDC = user32.GetWindowDC(hDesktopWnd)
     if not hDesktopDC: print('GetDC Failed'); sys.exit()
-
+    if self.release%1000==0:
+      user32.ReleaseDC(hDesktopWnd,hDesktopDC)
+    self.release+=1
+    print("DIMMENSIONS: WIDTH {} HEIGHT {}".format(width,height))
     hCaptureDC = gdi.CreateCompatibleDC(hDesktopDC)
-    if not hCaptureDC: print('CreateCompatibleBitmap Failed'); sys.exit()
+    if not hCaptureDC: 
+      print('CreateCompatibleBitmap Failed because of CompatibleDC')
+      user32.ReleaseDC(hDesktopWnd,hCaptureDC)
+      hCaptureDC = gdi.CreateCompatibleDC(hDesktopDC)
+      #global gdi
+      #gdi=windll.gdi32
+    #sys.exit()
 
     hCaptureBitmap = gdi.CreateCompatibleBitmap(hDesktopDC, width, height)
-    if not hCaptureBitmap: print('CreateCompatibleBitmap Failed'); sys.exit()
+    if not hCaptureBitmap: 
+      print('CreateCompatibleBitmap Failed Because of bitmap')
+      user32.ReleaseDC(hDesktopWnd,hCaptureBitmap)
+      #hCaptureBitmap = gdi.CreateCompatibleBitmap(hDesktopDC, width, height)
+
+
+#sys.exit()
 
     gdi.SelectObject(hCaptureDC, hCaptureBitmap)
 
@@ -607,8 +622,15 @@ class Robot(object):
     pBuf = (c_char * bmp_info.bmiHeader.biSizeImage)()
 
     gdi.GetBitmapBits(hCaptureBitmap, bmp_info.bmiHeader.biSizeImage, pBuf)
+    #print("SIZE: ",pBuf.raw)
+    #try:
+    #print("PBUFF: ",size)
+    cropped=Image.frombuffer('RGB', size, pBuf, 'raw', 'BGRX', 0, 1)
+    return cropped
+    #except:
+    #  cropped=Image.frombuffer('RGB', (1366, 768), pBuf, 'raw', 'BGRX', 0, 1)
+    #  return cropped
 
-    return Image.frombuffer('RGB', size, pBuf, 'raw', 'BGRX', 0, 1)
 
   def press_and_release(self, key):
     '''
@@ -616,6 +638,7 @@ class Robot(object):
     '''
     self.key_press(key)
     self.key_release(key)
+
 
   def key_press(self, key):
     ''' Presses a given key. '''
